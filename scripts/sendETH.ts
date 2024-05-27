@@ -14,8 +14,6 @@ async function main() {
   const address2 = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
   const recipients = [address1, address2];
   const amounts = [ethers.utils.parseEther("0.000001"), ethers.utils.parseEther("0.000002")];
-  const totalAmount = 0
-
 
   const tx = await multiSender.sendETH(recipients, amounts, { value: ethers.utils.parseEther("0.000003") });
   console.log('Transaction Hash:', tx)

@@ -14,18 +14,19 @@ describe('MultiSender', function () {
     
         const initialBalance = await ethers.provider.getBalance(sender.address);
         console.log('Initial Balance:', ethers.utils.formatEther(initialBalance));
-    
-        await multiSender.connect(sender).sendETH(
+
+        const beforeBalance1 = await ethers.provider.getBalance(recipient1.address);
+        const beforeBalance2 = await ethers.provider.getBalance(recipient2.address);
+        const beforeBalance3 = await ethers.provider.getBalance(recipient3.address);
+
+        await multiSender.sendETH(
           [recipient1.address, recipient2.address, recipient3.address],
           [ethers.utils.parseEther('1'), ethers.utils.parseEther('2'), ethers.utils.parseEther('3')]
-        );
+        , { value: ethers.utils.parseEther("6") });
     
-        const finalBalance = await ethers.provider.getBalance(sender.address);
-        expect(finalBalance).to.equal(initialBalance.sub(ethers.utils.parseEther('6')));
-    
-        expect(await ethers.provider.getBalance(recipient1.address)).to.equal(ethers.utils.parseEther('1'));
-        expect(await ethers.provider.getBalance(recipient2.address)).to.equal(ethers.utils.parseEther('2'));
-        expect(await ethers.provider.getBalance(recipient3.address)).to.equal(ethers.utils.parseEther('3'));
+        expect((await ethers.provider.getBalance(recipient1.address)).toString()).to.equal(beforeBalance1.add(ethers.utils.parseEther('1')).toString());
+        expect((await ethers.provider.getBalance(recipient2.address)).toString()).to.equal(beforeBalance2.add(ethers.utils.parseEther('2')).toString());
+        expect((await ethers.provider.getBalance(recipient3.address)).toString()).to.equal(beforeBalance3.add(ethers.utils.parseEther('3')).toString());    
       });
 
     it('Should send tokens correctly', async function () {
@@ -63,7 +64,7 @@ describe('MultiSender', function () {
         const initialBalance = await token.balanceOf(sender.address);
 
         // Call the multiSend function
-        await multiSender.connect(sender).multiSend(token.address, [recipient1.address, recipient2.address, recipient3.address], [ethers.utils.parseEther('10'), ethers.utils.parseEther('20'), ethers.utils.parseEther('30')]);
+        await multiSender.connect(sender).sendERC20(token.address, [recipient1.address, recipient2.address, recipient3.address], [ethers.utils.parseEther('10'), ethers.utils.parseEther('20'), ethers.utils.parseEther('30')]);
 
         // Check the sender's balance after the transaction
         const finalBalance = await token.balanceOf(sender.address);
