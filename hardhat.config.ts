@@ -35,7 +35,6 @@ const config: HardhatUserConfig = {
         mainnet: {
             url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
             accounts: [process.env.PRIVATE_KEY || '']
-            // accounts: [process.env.MAINNET_PRIVATE_KEY]
         }
     }
 }
@@ -77,7 +76,7 @@ task('erc20:balance', "Prints an account's ERC20 balance")
         const account = hre.web3.utils.toChecksumAddress(taskArgs.address)
         const abi = ['function balanceOf(address) view returns (uint)']
         const token = new hre.web3.eth.Contract(abi, taskArgs.token)
-        const balance = await token.methods.balanceOf(account).call()
+        var balance = await token.methods.balanceOf(account).call()
         console.log(balance)
     })
 
