@@ -1,17 +1,22 @@
 import { ethers } from 'hardhat';
 
-const deployedMultiSender = '0x8161Bc94E430C246bF8CbE9a1d45Ad082df82065'
+// Replace with the actual contract address
+const deployedMultiSender = '0x8161Bc94E430C246bF8CbE9a1d45Ad082df82065' // MultiSender contract address
+// Replace with the actual token address, recipients and amounts
+const tokenAddress = "0xFF3Ef745D9878AfE5934Ff0b130868AFDDbc58e8"; // USDC Testnet Contract address
+const address1 = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266' // Recipient 1
+const address2 = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8' // Recipient 2
 
 async function main() {
-  const multiSender = await ethers.getContractAt("MultiSender", deployedMultiSender);
+  // Get the first signer
   const [deployer] = await ethers.getSigners();
   
-  // Replace with the actual token address, recipients and amounts
-  const tokenAddress = "0xFF3Ef745D9878AfE5934Ff0b130868AFDDbc58e8"; // USDC Testnet
+  // read the deployed contract
+  const multiSender = await ethers.getContractAt("MultiSender", deployedMultiSender);
+  
+  // get the contract factory for the ERC20 token
   const token = await ethers.getContractAt("ERC20", tokenAddress);
-  // Replace with the actual recipients and amounts
-  const address1 = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-  const address2 = '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'
+  
   const recipients = [address1, address2];
   const amounts = [ethers.utils.parseUnits("1", 5), ethers.utils.parseUnits("2", 5)];
 

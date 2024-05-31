@@ -1,6 +1,7 @@
-import { ethers, run } from 'hardhat';
+import { ethers } from 'hardhat';
 
 async function main() {
+	// Get the first signer from
   const [deployer] = await ethers.getSigners();
 
   console.log(
@@ -10,9 +11,11 @@ async function main() {
 
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
+	// Get the contract factory for the MultiSender contract
   const MultiSender = await ethers.getContractFactory("MultiSender");
+	
+	// Deploy the MultiSender contract
   const multiSender = await MultiSender.deploy();
-
   await multiSender.deployed();
 
   console.log("MultiSender contract deployed to:", multiSender.address);
