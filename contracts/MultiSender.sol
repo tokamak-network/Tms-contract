@@ -67,12 +67,6 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         // Create an instance of the ERC20 token contract
         IERC20Upgradeable _token = IERC20Upgradeable(_tokenAddress);
 
-        // Check if the sender has approved the contract to spend the tokens
-        require(
-            _token.allowance(msg.sender, address(this)) >= _totalAmount,
-            "Transfer not approved"
-        );
-
         // Check if the sender has enough tokens
         require(_token.balanceOf(msg.sender) >= _totalAmount, "Not enough tokens");
 
