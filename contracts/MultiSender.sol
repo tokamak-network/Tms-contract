@@ -16,15 +16,9 @@ contract MultiSender is Initializable {
     event SendERC20(address token, address[] recipients, uint256[] amounts);
 
     // Function to send ETH to multiple recipients
-    function sendETH(
-        address[] calldata _recipients,
-        uint256[] calldata _amounts
-    ) external payable {
+    function sendETH(address[] calldata _recipients, uint256[] calldata _amounts) external payable {
         // Check if the lengths of recipients and amounts arrays are equal
-        require(
-            _recipients.length == _amounts.length,
-            "Must have the same length"
-        );
+        require(_recipients.length == _amounts.length, "Must have the same length");
 
         // Calculate the total amount to be sent
         uint256 totalAmount = 0;
@@ -33,7 +27,7 @@ contract MultiSender is Initializable {
         }
 
         // Check if the sender has enough ETH
-        require(msg.value >= totalAmount, "Not enough ETH");
+        require(msg.value == totalAmount, "Unequal transfer amount");
 
         // Send ETH to recipients
         for (uint256 i = 0; i < _recipients.length; i++) {
@@ -51,10 +45,7 @@ contract MultiSender is Initializable {
         uint256[] calldata _amounts
     ) external payable {
         // Check if the lengths of recipients and amounts arrays are equal
-        require(
-            _recipients.length == _amounts.length,
-            "Must have the same length"
-        );
+        require(_recipients.length == _amounts.length, "Must have the same length");
 
         // Calculate the total amount to be sent
         uint256 totalAmount = 0;
@@ -66,10 +57,7 @@ contract MultiSender is Initializable {
         IERC20Upgradeable token = IERC20Upgradeable(_token);
 
         // Check if the sender has enough tokens
-        require(
-            token.balanceOf(msg.sender) >= totalAmount,
-            "Not enough tokens"
-        );
+        require(token.balanceOf(msg.sender) >= totalAmount, "Not enough tokens");
 
         // Send tokens to each recipient
         for (uint256 i = 0; i < _recipients.length; i++) {
