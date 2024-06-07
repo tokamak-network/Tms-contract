@@ -45,6 +45,9 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         // Calculate the failed transaction amount
         uint256 _failedAmount = 0;
 
+        // Store the initial balance of the contract
+        uint256 initialBalance = address(this).balance - msg.value;
+
         // Send ETH to recipients
         for (uint256 i = 0; i < _recipients.length; i++) {
             // Check if the recipient is the zero address
@@ -69,6 +72,10 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
             (bool refundSuccess, ) = payable(msg.sender).call{value: _failedAmount}("");
             require(refundSuccess, "Refund failed");
         }
+
+        // Ensure that the final balance is as expected
+        uint256 finalBalance = address(this).balance;
+        require(finalBalance == initialBalance, "Balance mismatch after transfers");
 
         // Emit the SendETH event
         emit SendETH(_recipients, _amounts);
@@ -110,6 +117,9 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
 
             _token.transferFrom(msg.sender, _recipients[i], _amounts[i]);
         }
+
+        // Reset the allowance of the ERC20, for refund remaning amount to the sender
+        _token.approve(address(this), 0);
 
         // Emit the SendERC20 event
         emit SendERC20(_tokenAddress, _recipients, _amounts);
