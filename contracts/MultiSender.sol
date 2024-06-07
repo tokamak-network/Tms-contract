@@ -43,7 +43,7 @@ contract MultiSender is Initializable {
         address _token,
         address[] calldata _recipients,
         uint256[] calldata _amounts
-    ) external payable {
+    ) external {
         // Check if the lengths of recipients and amounts arrays are equal
         require(_recipients.length == _amounts.length, "Must have the same length");
 
