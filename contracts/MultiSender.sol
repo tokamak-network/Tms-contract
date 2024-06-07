@@ -36,11 +36,17 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
             _totalAmount += _amounts[i];
         }
 
+        // Check if the total amount is greater than zero
+        require(_totalAmount > 0, "Total transfer amount is zero");
+
         // Check if the sender has enough ETH
         require(msg.value == _totalAmount, "Unequal transfer amount");
 
         // Send ETH to recipients
         for (uint256 i = 0; i < _recipients.length; i++) {
+            // Skip the transaction if the amount is zero
+            if (_amounts[i] == 0) continue;
+
             (bool success, ) = payable(_recipients[i]).call{value: _amounts[i]}("");
             require(success, "Transfer failed");
         }
@@ -64,6 +70,9 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
             _totalAmount += _amounts[i];
         }
 
+        // Check if the total amount is greater than zero
+        require(_totalAmount > 0, "Total transfer amount is zero");
+
         // Create an instance of the ERC20 token contract
         IERC20Upgradeable _token = IERC20Upgradeable(_tokenAddress);
 
@@ -72,6 +81,9 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
 
         // Send tokens to each recipient
         for (uint256 i = 0; i < _recipients.length; i++) {
+            // Skip the transaction if the amount is zero
+            if (_amounts[i] == 0) continue;
+
             _token.transferFrom(msg.sender, _recipients[i], _amounts[i]);
         }
 
