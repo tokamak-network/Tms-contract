@@ -12,7 +12,7 @@ contract MultiSender is Initializable {
     function initialize() public initializer {}
 
     // Event definitions
-    event SendETH(address token, address[] recipients, uint256[] amounts);
+    event SendETH(address[] recipients, uint256[] amounts);
     event SendERC20(address token, address[] recipients, uint256[] amounts);
 
     // Function to send ETH to multiple recipients
@@ -35,7 +35,7 @@ contract MultiSender is Initializable {
         }
 
         // Emit the SendETH event
-        emit SendETH(address(0), _recipients, _amounts);
+        emit SendETH(_recipients, _amounts);
     }
 
     // Function to send ERC20 tokens to multiple recipients
