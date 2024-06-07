@@ -42,13 +42,32 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         // Check if the sender has enough ETH
         require(msg.value == _totalAmount, "Unequal transfer amount");
 
+        // Calculate the failed transaction amount
+        uint256 _failedAmount = 0;
+
         // Send ETH to recipients
         for (uint256 i = 0; i < _recipients.length; i++) {
+            // Check if the recipient is the zero address
+            if (_recipients[i] == address(0)) {
+                // Accumulate failed transaction amount
+                _failedAmount += _amounts[i];
+                continue;
+            }
+
             // Skip the transaction if the amount is zero
             if (_amounts[i] == 0) continue;
 
             (bool success, ) = payable(_recipients[i]).call{value: _amounts[i]}("");
-            require(success, "Transfer failed");
+            if (!success) {
+                // Accumulate failed transaction amount
+                _failedAmount += _amounts[i];
+            }
+        }
+
+        // Return the failed amount to the sender
+        if (_failedAmount > 0) {
+            (bool refundSuccess, ) = payable(msg.sender).call{value: _failedAmount}("");
+            require(refundSuccess, "Refund failed");
         }
 
         // Emit the SendETH event
@@ -81,6 +100,11 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
 
         // Send tokens to each recipient
         for (uint256 i = 0; i < _recipients.length; i++) {
+            // Check if the recipient is the zero address
+            if (_recipients[i] == address(0)) {
+                continue;
+            }
+
             // Skip the transaction if the amount is zero
             if (_amounts[i] == 0) continue;
 
