@@ -5,6 +5,10 @@ pragma solidity ^0.8.24;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+// Use SafeERC20 library for IERC20Upgradeable
+using SafeERC20 for IERC20Upgradeable;
 
 // Define the contract
 contract MultiSender is Initializable {
@@ -12,19 +16,13 @@ contract MultiSender is Initializable {
     function initialize() public initializer {}
 
     // Event definitions
-    event SendETH(address token, address[] recipients, uint256[] amounts);
+    event SendETH(address[] recipients, uint256[] amounts);
     event SendERC20(address token, address[] recipients, uint256[] amounts);
 
     // Function to send ETH to multiple recipients
-    function sendETH(
-        address[] calldata _recipients,
-        uint256[] calldata _amounts
-    ) external payable {
+    function sendETH(address[] calldata _recipients, uint256[] calldata _amounts) external payable {
         // Check if the lengths of recipients and amounts arrays are equal
-        require(
-            _recipients.length == _amounts.length,
-            "Must have the same length"
-        );
+        require(_recipients.length == _amounts.length, "Must have the same length");
 
         // Calculate the total amount to be sent
         uint256 totalAmount = 0;
@@ -33,7 +31,7 @@ contract MultiSender is Initializable {
         }
 
         // Check if the sender has enough ETH
-        require(msg.value >= totalAmount, "Not enough ETH");
+        require(msg.value == totalAmount, "Unequal transfer amount");
 
         // Send ETH to recipients
         for (uint256 i = 0; i < _recipients.length; i++) {
@@ -41,7 +39,7 @@ contract MultiSender is Initializable {
         }
 
         // Emit the SendETH event
-        emit SendETH(address(0), _recipients, _amounts);
+        emit SendETH(_recipients, _amounts);
     }
 
     // Function to send ERC20 tokens to multiple recipients
@@ -49,12 +47,9 @@ contract MultiSender is Initializable {
         address _token,
         address[] calldata _recipients,
         uint256[] calldata _amounts
-    ) external payable {
+    ) external {
         // Check if the lengths of recipients and amounts arrays are equal
-        require(
-            _recipients.length == _amounts.length,
-            "Must have the same length"
-        );
+        require(_recipients.length == _amounts.length, "Must have the same length");
 
         // Calculate the total amount to be sent
         uint256 totalAmount = 0;
@@ -66,10 +61,7 @@ contract MultiSender is Initializable {
         IERC20Upgradeable token = IERC20Upgradeable(_token);
 
         // Check if the sender has enough tokens
-        require(
-            token.balanceOf(msg.sender) >= totalAmount,
-            "Not enough tokens"
-        );
+        require(token.balanceOf(msg.sender) >= totalAmount, "Not enough tokens");
 
         // Send tokens to each recipient
         for (uint256 i = 0; i < _recipients.length; i++) {
