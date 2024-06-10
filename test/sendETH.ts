@@ -14,8 +14,6 @@ describe('MultiSender SendERC20', async function () {
   })
 
   it('Should sendETH correctly', async function () {
-    const initialBalance = await ethers.provider.getBalance(sender.address)
-
     const beforeBalance1 = await ethers.provider.getBalance(recipient1.address)
     const beforeBalance2 = await ethers.provider.getBalance(recipient2.address)
     const beforeBalance3 = await ethers.provider.getBalance(recipient3.address)
