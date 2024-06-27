@@ -1,11 +1,12 @@
-# Tokamak Milti Send 
+# Tokamak Milti Send
 
-Tokamak Multi Send is a project that allows you to send `ETH` or `ERC20` tokens to multiple recipients in a single transaction. 
+Tokamak Multi Send is a project that allows you to send `ETH` or `ERC20` tokens to multiple recipients in a single transaction.
 It's built on the `Titan` & `Titan Sepolia` network, providing a cost-effective and efficient way to distribute tokens.
 
 ## Deployed Contract
 
 ### Titan Sepolia
+
 The contract is deployed on the Titan Sepolia network at [0x8161Bc94E430C246bF8CbE9a1d45Ad082df82065](https://explorer.titan-sepolia.tokamak.network/address/0x8161Bc94E430C246bF8CbE9a1d45Ad082df82065)
 
 ## Getting Started with Project
@@ -15,7 +16,6 @@ The contract is deployed on the Titan Sepolia network at [0x8161Bc94E430C246bF8C
 - Node.js and npm installed on your machine
 - An `.env` file created from `.env.example`:
 
-
 ```shell
     cp .env.example .env
 ```
@@ -23,6 +23,7 @@ The contract is deployed on the Titan Sepolia network at [0x8161Bc94E430C246bF8C
 Fill in the environment variables in the .env file.
 
 ### Installation
+
 Install the project dependencies:
 
 ```shell
@@ -34,11 +35,13 @@ Install the project dependencies:
 ### Run `locally`
 
 Start a local Hardhat node:
+
 ```shell
     npx hardhat node --hostname 127.0.0.1
 ```
 
 Compile the contracts and run the tests:
+
 ```shell
     npx hardhat compile
     npx hardhat test
@@ -47,6 +50,7 @@ Compile the contracts and run the tests:
 ### Test on `Titan Sepolia`
 
 Before testing, ensure you have added your private key to the `.env` file:
+
 ```
 PRIVATE_KEY=
 ```
