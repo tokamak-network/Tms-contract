@@ -2,6 +2,7 @@ import { HardhatUserConfig, task } from 'hardhat/config'
 import '@nomicfoundation/hardhat-toolbox'
 import '@nomiclabs/hardhat-web3'
 import '@nomiclabs/hardhat-ethers'
+import 'hardhat-deploy'
 import dotenv from 'dotenv'
 
 dotenv.config()
@@ -9,6 +10,11 @@ dotenv.config()
 const config: HardhatUserConfig = {
   solidity: '0.8.24',
   defaultNetwork: 'localhost',
+  namedAccounts: {
+    deployer: {
+      default: 0 // here this will by default take the first account as deployer
+    }
+  },
   networks: {
     localhost: {
       gas: 1_400_000
