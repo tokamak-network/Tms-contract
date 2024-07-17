@@ -9,6 +9,10 @@ It's built on the `Titan` & `Titan Sepolia` network, providing a cost-effective 
 
 The contract is deployed on the Titan Sepolia network at [0x8161Bc94E430C246bF8CbE9a1d45Ad082df82065](https://explorer.titan-sepolia.tokamak.network/address/0x8161Bc94E430C246bF8CbE9a1d45Ad082df82065)
 
+### Titan Mainnet
+
+The contract is deployed on the Titan Mainnet at [0x2f267b4646cfdB26b18c4571B5c41E8b415Ab9aA](https://explorer.titan.tokamak.network/address/0x2f267b4646cfdB26b18c4571B5c41E8b415Ab9aA)
+
 ## Getting Started with Project
 
 ### Prerequisites
