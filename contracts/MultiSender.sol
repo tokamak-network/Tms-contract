@@ -4,12 +4,11 @@ pragma solidity ^0.8.24;
 // Import required modules
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 // Use SafeERC20 library for IERC20Upgradeable
-using SafeERC20 for IERC20Upgradeable;
+using SafeERC20Upgradeable for IERC20Upgradeable;
 
 // Define the contract
 contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
@@ -115,7 +114,7 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
             // Skip the transaction if the amount is zero
             if (_amounts[i] == 0) continue;
 
-            _token.transferFrom(msg.sender, _recipients[i], _amounts[i]);
+            _token.safeTransferFrom(msg.sender, _recipients[i], _amounts[i]);
         }
 
         // Emit the SendERC20 event
