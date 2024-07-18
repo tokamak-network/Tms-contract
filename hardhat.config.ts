@@ -9,14 +9,14 @@ dotenv.config()
 
 const config: HardhatUserConfig = {
   solidity: '0.8.24',
-  defaultNetwork: 'localhost',
+  defaultNetwork: 'hardhat',
   namedAccounts: {
     deployer: {
       default: 0 // here this will by default take the first account as deployer
     }
   },
   networks: {
-    localhost: {
+    hardhat: {
       gas: 1_400_000
     },
     sepoliaTitan: {
