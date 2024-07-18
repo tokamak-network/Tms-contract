@@ -42,7 +42,7 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         require(msg.value == _totalAmount, "Unequal transfer amount");
 
         // Calculate the failed transaction amount
-        uint256 _failedAmount = 0;
+        uint256 _failedAmount;
 
         // Store the initial balance of the contract
         uint256 initialBalance = address(this).balance - msg.value;
@@ -90,7 +90,7 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         require(_recipients.length == _amounts.length, "Must have the same length");
 
         // Calculate the total amount to be sent
-        uint256 _totalAmount = 0;
+        uint256 _totalAmount;
         for (uint256 i = 0; i < _amounts.length; i++) {
             _totalAmount += _amounts[i];
         }
