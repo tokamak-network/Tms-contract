@@ -118,9 +118,6 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
             _token.safeTransferFrom(msg.sender, _recipients[i], _amounts[i]);
         }
 
-        // Reset the allowance of the ERC20, for refund remaning amount to the sender
-        _token.approve(address(this), 0);
-
         // Emit the SendERC20 event
         emit SendERC20(_tokenAddress, _recipients, _amounts);
     }
