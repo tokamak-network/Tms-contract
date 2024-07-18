@@ -49,15 +49,15 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
 
         // Send ETH to recipients
         for (uint256 i = 0; i < _recipients.length; i++) {
+            // Skip the transaction if the amount is zero
+            if (_amounts[i] == 0) continue;
+
             // Check if the recipient is the zero address
             if (_recipients[i] == address(0)) {
                 // Accumulate failed transaction amount
                 _failedAmount += _amounts[i];
                 continue;
             }
-
-            // Skip the transaction if the amount is zero
-            if (_amounts[i] == 0) continue;
 
             (bool success, ) = payable(_recipients[i]).call{value: _amounts[i]}("");
             if (!success) {
