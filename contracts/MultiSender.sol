@@ -4,12 +4,11 @@ pragma solidity ^0.8.24;
 // Import required modules
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 // Use SafeERC20 library for IERC20Upgradeable
-using SafeERC20 for IERC20Upgradeable;
+using SafeERC20Upgradeable for IERC20Upgradeable;
 
 // Define the contract
 contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
@@ -43,22 +42,22 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         require(msg.value == _totalAmount, "Unequal transfer amount");
 
         // Calculate the failed transaction amount
-        uint256 _failedAmount = 0;
+        uint256 _failedAmount;
 
         // Store the initial balance of the contract
         uint256 initialBalance = address(this).balance - msg.value;
 
         // Send ETH to recipients
         for (uint256 i = 0; i < _recipients.length; i++) {
+            // Skip the transaction if the amount is zero
+            if (_amounts[i] == 0) continue;
+
             // Check if the recipient is the zero address
             if (_recipients[i] == address(0)) {
                 // Accumulate failed transaction amount
                 _failedAmount += _amounts[i];
                 continue;
             }
-
-            // Skip the transaction if the amount is zero
-            if (_amounts[i] == 0) continue;
 
             (bool success, ) = payable(_recipients[i]).call{value: _amounts[i]}("");
             if (!success) {
@@ -91,7 +90,7 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         require(_recipients.length == _amounts.length, "Must have the same length");
 
         // Calculate the total amount to be sent
-        uint256 _totalAmount = 0;
+        uint256 _totalAmount;
         for (uint256 i = 0; i < _amounts.length; i++) {
             _totalAmount += _amounts[i];
         }
@@ -115,11 +114,8 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
             // Skip the transaction if the amount is zero
             if (_amounts[i] == 0) continue;
 
-            _token.transferFrom(msg.sender, _recipients[i], _amounts[i]);
+            _token.safeTransferFrom(msg.sender, _recipients[i], _amounts[i]);
         }
-
-        // Reset the allowance of the ERC20, for refund remaning amount to the sender
-        _token.approve(address(this), 0);
 
         // Emit the SendERC20 event
         emit SendERC20(_tokenAddress, _recipients, _amounts);

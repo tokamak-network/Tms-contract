@@ -8,15 +8,24 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 const config: HardhatUserConfig = {
-  solidity: '0.8.24',
-  defaultNetwork: 'localhost',
+  solidity: {
+    version: '0.8.24',
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 100000000
+      },
+      viaIR: true // Enable viaIR if possible to save gas
+    }
+  },
+  defaultNetwork: 'hardhat',
   namedAccounts: {
     deployer: {
       default: 0 // here this will by default take the first account as deployer
     }
   },
   networks: {
-    localhost: {
+    hardhat: {
       gas: 1_400_000
     },
     sepoliaTitan: {
