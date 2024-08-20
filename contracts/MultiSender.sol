@@ -7,7 +7,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-
 // Use SafeERC20 library for IERC20Upgradeable
 using SafeERC20Upgradeable for IERC20Upgradeable;
 
@@ -42,9 +41,6 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         // Check if the sender has enough ETH
         require(msg.value == _totalAmount, "Unequal transfer amount");
 
-        // Calculate the failed transaction amount
-        uint256 _failedAmount;
-
         // Store the initial balance of the contract
         uint256 initialBalance = address(this).balance - msg.value;
 
@@ -55,22 +51,13 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
 
             // Check if the recipient is the zero address
             if (_recipients[i] == address(0)) {
-                // Accumulate failed transaction amount
-                _failedAmount += _amounts[i];
-                continue;
+                revert("Cannot send to zero address");
             }
 
             (bool success, ) = payable(_recipients[i]).call{value: _amounts[i]}("");
             if (!success) {
-                // Accumulate failed transaction amount
-                _failedAmount += _amounts[i];
+                revert("Transfer failed");
             }
-        }
-
-        // Return the failed amount to the sender
-        if (_failedAmount > 0) {
-            (bool refundSuccess, ) = payable(msg.sender).call{value: _failedAmount}("");
-            require(refundSuccess, "Refund failed");
         }
 
         // Ensure that the final balance is as expected
@@ -80,7 +67,6 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         // Emit the SendETH event
         emit SendETH(_recipients, _amounts);
     }
-
     // Function to send ERC20 tokens to multiple recipients
     function sendERC20(
         address _tokenAddress,

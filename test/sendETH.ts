@@ -57,40 +57,25 @@ describe('MultiSender SendETH', function () {
   })
 
   it('Should handle address(0) and refund correctly', async function () {
-    const initialBalanceSender = await ethers.provider.getBalance(sender.address)
-    const beforeBalance1 = await ethers.provider.getBalance(recipient1.address)
-    const beforeBalance2 = await ethers.provider.getBalance(recipient2.address)
-    const beforeBalance3 = await ethers.provider.getBalance(recipient3.address)
-
     // Send ETH with one of the recipients as address(0)
-    const tx = await multiSender.sendETH(
-      [recipient1.address, ethers.ZeroAddress, recipient3.address],
-      [ethers.parseEther('1'), ethers.parseEther('2'), ethers.parseEther('3')],
-      { value: ethers.parseEther('6') }
-    )
-
-    const finalBalanceSender = await ethers.provider.getBalance(sender.address)
-
-    expect(await ethers.provider.getBalance(recipient1.address)).to.equal(
-      beforeBalance1 + ethers.parseEther('1')
-    )
-    expect(await ethers.provider.getBalance(recipient2.address)).to.equal(beforeBalance2)
-    expect(await ethers.provider.getBalance(recipient3.address)).to.equal(
-      beforeBalance3 + ethers.parseEther('3')
-    )
-
-    const expectedSpending = ethers.parseEther('4')
-    const receipt = await ethers.provider.getTransactionReceipt(tx.hash)
-    const gasUsed = receipt.gasUsed
-    const gasPrice = tx.gasPrice
-    const gasCost = gasUsed * gasPrice
-
-    // Check if the refund is correct
-    expect(finalBalanceSender).to.be.closeTo(
-      initialBalanceSender - expectedSpending - gasCost,
-      ethers.parseEther('0.0001') // Allows for small variations in gas cost
-    )
+    await expect(
+      multiSender.sendETH(
+        [recipient1.address, ethers.ZeroAddress, recipient3.address],
+        [ethers.parseEther('1'), ethers.parseEther('2'), ethers.parseEther('3')],
+        { value: ethers.parseEther('6') }
+      )
+    ).to.be.revertedWith('Cannot send to zero address')
   })
-
-  // TODO: Add more tests to check failure conditions for ERC20
+  it('Should revert if transfer failed', async function () {
+    const RevertingFallback = await ethers.getContractFactory('RevertETH')
+    const contract = await RevertingFallback.deploy()
+    // Send ETH with one of the recipients as address(0)
+    await expect(
+      multiSender.sendETH(
+        [contract.target, recipient1.address, recipient3.address],
+        [ethers.parseEther('1'), ethers.parseEther('2'), ethers.parseEther('3')],
+        { value: ethers.parseEther('6') }
+      )
+    ).to.be.revertedWith(`Transfer failed`)
+  })
 })
