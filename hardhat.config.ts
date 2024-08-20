@@ -1,129 +1,114 @@
-import { HardhatUserConfig, task } from 'hardhat/config'
-import '@nomicfoundation/hardhat-toolbox'
-import '@nomiclabs/hardhat-web3'
-import '@nomiclabs/hardhat-ethers'
+import { HardhatUserConfig } from 'hardhat/config'
+import { NetworkUserConfig } from 'hardhat/types'
+import * as dotenv from 'dotenv'
+import '@nomicfoundation/hardhat-ethers'
 import 'hardhat-deploy'
-import dotenv from 'dotenv'
+import 'hardhat-deploy-ethers'
+import '@nomicfoundation/hardhat-verify'
+import 'hardhat-contract-sizer'
+import '@nomicfoundation/hardhat-verify'
+import 'hardhat-gas-reporter'
+import '@openzeppelin/hardhat-upgrades'
+import '@nomicfoundation/hardhat-chai-matchers'
 
 dotenv.config()
 
-const config: HardhatUserConfig = {
-  solidity: {
-    version: '0.8.24',
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 100000000
-      },
-      viaIR: true // Enable viaIR if possible to save gas
-    }
-  },
-  defaultNetwork: 'hardhat',
-  namedAccounts: {
-    deployer: {
-      default: 0 // here this will by default take the first account as deployer
-    }
-  },
-  networks: {
-    hardhat: {
-      gas: 1_400_000
-    },
-    sepoliaTitan: {
-      url: 'https://rpc.titan-sepolia.tokamak.network',
-      chainId: 55007,
-      accounts: [process.env.PRIVATE_KEY || '']
-    },
-    mainnetTitan: {
-      url: 'https://rpc.titan.tokamak.network',
-      chainId: 55004,
-      accounts: [process.env.PRIVATE_KEY || '']
-    },
-    goerli: {
-      url: `https://goerli.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [process.env.PRIVATE_KEY || '']
-    },
-    sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.INFURA_API_KEY}`,
-      chainId: 11155111,
-      accounts: [process.env.PRIVATE_KEY || '']
-    },
-    mainnet: {
-      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [process.env.PRIVATE_KEY || '']
-    }
-  }
-}
-
-task('accounts', 'Prints the list of accounts', async (_, hre) => {
+task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
   const accounts = await hre.ethers.getSigners()
   for (const account of accounts) {
     console.log(account.address)
   }
 })
 
-task('address', 'Convert mnemonic to address')
-  .addParam('mnemonic', "The account's mnemonic")
-  .setAction(async (taskArgs: any, hre: any) => {
-    const wallet = hre.ethers.Wallet.fromMnemonic(taskArgs.mnemonic)
-    console.log('Wallet Address:', wallet.address)
-    console.log('Wallet Private Key:', wallet.privateKey)
-  })
+const accounts = {
+  mnemonic: process.env.MNEMONIC || 'test test test test test test test test test test test junk'
+  // accountsBalance: "990000000000000000000",
+}
 
-task('addressFromPrivateKey', 'Convert private key to address')
-  .addParam('privatekey', "The account's private key")
-  .setAction(async (taskArgs: any, hre: any) => {
-    const wallet = new hre.ethers.Wallet(taskArgs.privatekey)
-    console.log('Wallet Address:', wallet.address)
-  })
-
-task('balance', "Prints an account's balance")
-  .addParam('address', "The account's address")
-  .setAction(async (taskArgs: any, hre: any) => {
-    const account = hre.web3.utils.toChecksumAddress(taskArgs.address)
-    const balance = await hre.web3.eth.getBalance(account)
-    console.log(hre.web3.utils.fromWei(balance, 'ether'), 'ETH')
-  })
-const abi = [
-  {
-    constant: true,
-    inputs: [{ name: '_owner', type: 'address' }],
-    name: 'balanceOf',
-    outputs: [{ name: 'balance', type: 'uint256' }],
-    type: 'function'
+const config: HardhatUserConfig = {
+  defaultNetwork: 'hardhat',
+  gasReporter: {
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+    currency: 'USD',
+    enabled: true
+  },
+  namedAccounts: {
+    deployer: {
+      default: 0
+    },
+    dev: {
+      default: 1
+    },
+    proxyAdminOwner: {
+      default: 0
+    }
+  },
+  networks: {
+    hardhat: {
+      hardfork: 'london',
+      saveDeployments: true,
+      allowUnlimitedContractSize: true,
+      evmVersion: 'byzantium',
+      forking: {
+        url: `https://rpc.titan-sepolia.tokamak.network`,
+        enabled: true,
+        saveDeployments: true,
+        blockNumber: 850
+      },
+      gasPrice: 'auto',
+      accounts
+    } as NetworkUserConfig,
+    mainnet: {
+      url: `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
+      accounts,
+      chainId: 1,
+      live: false,
+      saveDeployments: true
+    } as NetworkUserConfig,
+    'sepolia-titan': {
+      url: `https://rpc.titan-sepolia.tokamak.network`,
+      chainId: 55007,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+      live: true,
+      saveDeployments: true
+    } as NetworkUserConfig
+  },
+  etherscan: {
+    apiKey: process.env.API_KEY,
+    customChains: [
+      {
+        network: 'sepolia-titan',
+        chainId: 55007,
+        urls: {
+          apiURL: 'https://explorer.titan-sepolia.tokamak.network/',
+          browserURL: 'https://explorer.titan-sepolia.tokamak.network/'
+        }
+      }
+    ]
+  },
+  paths: {
+    deploy: 'deploy',
+    deployments: 'deployments',
+    sources: 'contracts',
+    tests: 'test'
+  },
+  mocha: {
+    timeout: 300000
+  },
+  contractSizer: {
+    alphaSort: true,
+    disambiguatePaths: true,
+    runOnCompile: true
+  },
+  solidity: {
+    version: '0.8.24',
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
   }
-]
-task('erc20:balance', "Prints an account's ERC20 balance")
-  .addParam('token', "The token's address")
-  .addParam('address', "The account's address")
-  .setAction(async (taskArgs: any, hre: any) => {
-    const account = hre.web3.utils.toChecksumAddress(taskArgs.address)
-    const token = new hre.web3.eth.Contract(abi, taskArgs.token)
-    let balance = await token.methods.balanceOf(account).call()
-    console.log(balance)
-  })
-
-task('send', 'Send ETH to an address')
-  .addParam('to', "The recipient's address")
-  .addParam('amount', 'The amount to send')
-  .setAction(async (taskArgs: any, hre: any) => {
-    const from = (await hre.ethers.getSigners())[0]
-    const tx = await from.sendTransaction({
-      to: taskArgs.to,
-      value: hre.ethers.utils.parseEther(taskArgs.amount)
-    })
-    console.log('Transaction Hash:', tx.hash)
-  })
-
-task('erc20:transfer', 'Transfer ERC20 tokens')
-  .addParam('token', "The token's address")
-  .addParam('to', "The recipient's address")
-  .addParam('amount', 'The amount to send')
-  .setAction(async (taskArgs: any, hre: any) => {
-    const from = (await hre.ethers.getSigners())[0]
-    const abi = ['function transfer(address, uint)']
-    const token = new hre.ethers.Contract(taskArgs.token, abi, from)
-    const tx = await token.transfer(taskArgs.to, taskArgs.amount)
-    console.log('Transaction Hash:', tx.hash)
-  })
+}
 
 export default config

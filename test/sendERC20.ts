@@ -1,89 +1,198 @@
-import { ethers } from 'hardhat'
+import { ethers, upgrades } from 'hardhat'
 import { expect } from 'chai'
+import { MultiSender, Token, MultiSenderV2 } from '../typechain-types'
 
-describe('MultiSender', async function () {
-  let multiSender, token
-  let sender, recipient1, recipient2, recipient3
+describe('MultiSender', function () {
+  let MultiSender: any, Token: any, MultiSenderV2: any
+  let multiSender: MultiSender, token: Token, upgradedMultiSender: MultiSenderV2
+  let sender: any, recipient1: any, recipient2: any, recipient3: any, upgrader: any
 
   beforeEach(async function () {
-    // Deploy the contract
-    const MultiSender = await ethers.getContractFactory('MultiSender')
-    multiSender = await MultiSender.deploy()
-    await multiSender.deployed()
-    ;[sender, recipient1, recipient2, recipient3] = await ethers.getSigners()
+    ;[sender, recipient1, recipient2, recipient3, upgrader] = await ethers.getSigners()
 
-    // Mint some tokens for the sender
-    const Token = await ethers.getContractFactory('Token')
-    token = await Token.deploy(ethers.utils.parseEther('100'))
-    await token.deployed()
+    // Deploy the upgradeable MultiSender contract
+    MultiSender = await ethers.getContractFactory('MultiSender')
+    multiSender = await upgrades.deployProxy(MultiSender, [])
+    await multiSender.waitForDeployment()
+
+    // Deploy the ERC20 token
+    Token = await ethers.getContractFactory('Token')
+    token = await Token.deploy(ethers.parseEther('1000'))
+    await token.waitForDeployment()
+
+    // Deploy the upgradeable MultiSenderV2 contract
+    MultiSenderV2 = await ethers.getContractFactory('MultiSenderV2')
+
+    // Transfer some tokens to the sender
+    await token.transfer(sender.address, ethers.parseEther('100'))
   })
 
-  it('Should send ERC20 token correctly', async function () {
-    // Mint some tokens for the sender
+  describe('ERC20 token transfers', function () {
+    it('Should send ERC20 tokens correctly', async function () {
+      await token.connect(sender).approve(multiSender.target, ethers.parseEther('60'))
 
-    await token.transfer(sender.address, ethers.utils.parseEther('100'))
+      const initialBalance = await token.balanceOf(sender.address)
 
-    const balance = await token.balanceOf(sender.address)
-    console.log('Balance:', ethers.utils.formatEther(balance))
+      await multiSender
+        .connect(sender)
+        .sendERC20(
+          token.target,
+          [recipient1.address, recipient2.address, recipient3.address],
+          [ethers.parseEther('10'), ethers.parseEther('20'), ethers.parseEther('30')]
+        )
 
-    // Approve the MultiSender contract to spend tokens
-    await token.connect(sender).approve(multiSender.address, ethers.utils.parseEther('60'))
+      const finalBalance = await token.balanceOf(sender.address)
+      expect(finalBalance).to.equal(initialBalance - ethers.parseEther('60'))
 
-    // Check the sender's balance before the transaction
-    const initialBalance = await token.balanceOf(sender.address)
+      expect(await token.balanceOf(recipient1.address)).to.equal(ethers.parseEther('10'))
+      expect(await token.balanceOf(recipient2.address)).to.equal(ethers.parseEther('20'))
+      expect(await token.balanceOf(recipient3.address)).to.equal(ethers.parseEther('30'))
+    })
 
-    // Call the multiSend function
-    await multiSender
-      .connect(sender)
-      .sendERC20(
-        token.address,
-        [recipient1.address, recipient2.address, recipient3.address],
-        [
-          ethers.utils.parseEther('10'),
-          ethers.utils.parseEther('20'),
-          ethers.utils.parseEther('30')
-        ]
-      )
+    it('Should handle address(0) and refund correctly', async function () {
+      const initialBalance = await token.balanceOf(sender.address)
+      await token.connect(sender).approve(multiSender.target, ethers.parseEther('60'))
 
-    // Check the sender's balance after the transaction
-    const finalBalance = await token.balanceOf(sender.address)
-    expect(finalBalance).to.equal(initialBalance.sub(ethers.utils.parseEther('60')))
+      await multiSender
+        .connect(sender)
+        .sendERC20(
+          token.target,
+          [recipient1.address, ethers.ZeroAddress, recipient3.address],
+          [ethers.parseEther('10'), ethers.parseEther('20'), ethers.parseEther('30')]
+        )
 
-    // Check the recipients' balances
-    expect(await token.balanceOf(recipient1.address)).to.equal(ethers.utils.parseEther('10'))
-    expect(await token.balanceOf(recipient2.address)).to.equal(ethers.utils.parseEther('20'))
-    expect(await token.balanceOf(recipient3.address)).to.equal(ethers.utils.parseEther('30'))
+      const finalBalance = await token.balanceOf(sender.address)
+      expect(finalBalance).to.equal(initialBalance - ethers.parseEther('40'))
+
+      expect(await token.balanceOf(recipient1.address)).to.equal(ethers.parseEther('10'))
+      expect(await token.balanceOf(recipient3.address)).to.equal(ethers.parseEther('30'))
+    })
+
+    it('Should revert when recipients and amounts arrays have different lengths', async function () {
+      await expect(
+        multiSender
+          .connect(sender)
+          .sendERC20(
+            token.target,
+            [recipient1.address, recipient2.address],
+            [ethers.parseEther('10')]
+          )
+      ).to.be.revertedWith('Must have the same length')
+    })
+
+    it('Should revert when total transfer amount is zero', async function () {
+      await expect(
+        multiSender
+          .connect(sender)
+          .sendERC20(token.target, [recipient1.address], [ethers.parseEther('0')])
+      ).to.be.revertedWith('Total transfer amount is zero')
+    })
+
+    it('Should revert when sender has insufficient balance', async function () {
+      await token.connect(sender).approve(multiSender.target, ethers.parseEther('1000000'))
+      await expect(
+        multiSender
+          .connect(sender)
+          .sendERC20(token.target, [recipient1.address], [ethers.parseEther('1000000')])
+      ).to.be.revertedWith('Not enough tokens')
+    })
+
+    it('Should revert transfer which returns false', async function () {
+      // Mock an address to fail transfers
+      const failedRecipient = ethers.Wallet.createRandom().address
+
+      // Deploy the FailingERC20 contract
+      const FailingERC20 = await ethers.getContractFactory('FailingERC20')
+      const failingToken = await FailingERC20.deploy()
+
+      // Set the FailingERC20 contract as the token to be used
+      token = failingToken
+      const initialSenderBalance = await token.balanceOf(sender.address)
+      const initialRecipient1Balance = await token.balanceOf(recipient1.address)
+      const initialRecipient3Balance = await token.balanceOf(recipient3.address)
+
+      // Send tokens, with one recipient expected to fail
+      await expect(
+        multiSender
+          .connect(sender)
+          .sendERC20(
+            token.target,
+            [recipient1.address, failedRecipient, recipient3.address],
+            [ethers.parseEther('10'), ethers.parseEther('20'), ethers.parseEther('30')]
+          )
+      ).to.be.revertedWith('SafeERC20: ERC20 operation did not succeed')
+
+      // Check that the balances have not changed
+      expect(await token.balanceOf(sender.address)).to.equal(initialSenderBalance)
+      expect(await token.balanceOf(recipient1.address)).to.equal(initialRecipient1Balance)
+      expect(await token.balanceOf(recipient3.address)).to.equal(initialRecipient3Balance)
+    })
+
+    it('Should revert transfer which reverts', async function () {
+      // Mock an address to fail transfers
+      const failedRecipient = ethers.Wallet.createRandom().address
+
+      // Deploy the FailingERC20 contract
+      const FailingERC20 = await ethers.getContractFactory('RevertERC20')
+      const failingToken = await FailingERC20.deploy()
+
+      // Set the FailingERC20 contract as the token to be used
+      token = failingToken
+      const initialSenderBalance = await token.balanceOf(sender.address)
+      const initialRecipient1Balance = await token.balanceOf(recipient1.address)
+      const initialRecipient3Balance = await token.balanceOf(recipient3.address)
+
+      // Send tokens, with one recipient expected to fail
+      await expect(
+        multiSender
+          .connect(sender)
+          .sendERC20(
+            token.target,
+            [recipient1.address, failedRecipient, recipient3.address],
+            [ethers.parseEther('10'), ethers.parseEther('20'), ethers.parseEther('30')]
+          )
+      ).to.be.revertedWith('SafeERC20: low-level call failed')
+
+      // Check that the balances have not changed
+      expect(await token.balanceOf(sender.address)).to.equal(initialSenderBalance)
+      expect(await token.balanceOf(recipient1.address)).to.equal(initialRecipient1Balance)
+      expect(await token.balanceOf(recipient3.address)).to.equal(initialRecipient3Balance)
+    })
   })
 
-  it('Should handle address(0) and refund correctly', async function () {
-    // Get initial balances
-    const initialBalance = await token.balanceOf(sender.address)
+  describe('Contract upgrades', function () {
+    it('Should upgrade the contract and maintain state', async function () {
+      // Perform some operations on the original contract
+      await token.connect(sender).approve(multiSender.target, ethers.parseEther('10'))
+      await multiSender
+        .connect(sender)
+        .sendERC20(token.target, [multiSender.target], [ethers.parseEther('10')])
 
-    // Approve the contract to spend tokens on behalf of the sender
-    await token.approve(multiSender.address, ethers.utils.parseEther('60'))
+      // Upgrade the contract
+      upgradedMultiSender = await upgrades.upgradeProxy(multiSender.target, MultiSenderV2)
+      await upgradedMultiSender.waitForDeployment()
 
-    // Call the multiSend sendERC20 function
-    await multiSender
-      .connect(sender)
-      .sendERC20(
-        token.address,
-        [recipient1.address, ethers.constants.AddressZero, recipient3.address],
-        [
-          ethers.utils.parseEther('10'),
-          ethers.utils.parseEther('20'),
-          ethers.utils.parseEther('30')
-        ]
-      )
+      // Check if the state is maintained
+      expect(await token.balanceOf(multiSender.target)).to.equal(ethers.parseEther('10'))
 
-    // Check the sender's balance after the transaction
-    const finalBalance = await token.balanceOf(sender.address)
-    expect(finalBalance).to.equal(initialBalance.sub(ethers.utils.parseEther('40')))
+      // Perform operations on the upgraded contract
+      await token.connect(sender).approve(upgradedMultiSender.target, ethers.parseEther('60'))
 
-    // Check the recipients' balances
-    expect(await token.balanceOf(recipient1.address)).to.equal(ethers.utils.parseEther('10'))
-    expect(await token.balanceOf(recipient2.address)).to.equal(ethers.utils.parseEther('0')) // zero address used
-    expect(await token.balanceOf(recipient3.address)).to.equal(ethers.utils.parseEther('30'))
+      const initialBalance = await token.balanceOf(sender.address)
+
+      await upgradedMultiSender
+        .connect(sender)
+        .sendERC20(
+          token.target,
+          [recipient1.address, recipient2.address, recipient3.address],
+          [ethers.parseEther('10'), ethers.parseEther('20'), ethers.parseEther('30')]
+        )
+
+      const finalBalance = await token.balanceOf(sender.address)
+      expect(finalBalance).to.equal(initialBalance - ethers.parseEther('60'))
+      expect(await token.balanceOf(recipient1.address)).to.equal(ethers.parseEther('10'))
+      expect(await token.balanceOf(recipient2.address)).to.equal(ethers.parseEther('20'))
+      expect(await token.balanceOf(recipient3.address)).to.equal(ethers.parseEther('30'))
+    })
   })
-
-  // TODO(Bayram): Add more tests to check failure conditions for ERC20
 })

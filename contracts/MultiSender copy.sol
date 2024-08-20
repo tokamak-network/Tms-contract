@@ -12,7 +12,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 using SafeERC20Upgradeable for IERC20Upgradeable;
 
 // Define the contract
-contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
+contract MultiSenderV2 is Initializable, ReentrancyGuardUpgradeable {
     // Initialize the contract
     function initialize() public initializer {
         __ReentrancyGuard_init();
