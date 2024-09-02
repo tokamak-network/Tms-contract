@@ -44,7 +44,7 @@ describe('MultiSender SendETH', function () {
         [ethers.parseEther('1'), ethers.parseEther('2'), ethers.parseEther('3')],
         { value: ethers.parseEther('5') } //
       )
-    ).to.be.revertedWith('Unequal transfer amount')
+    ).to.be.revertedWithCustomError(multiSender, 'UnequalTransferAmount')
 
     // Test when total amount is more than the sent amount
     await expect(
@@ -53,7 +53,7 @@ describe('MultiSender SendETH', function () {
         [ethers.parseEther('1'), ethers.parseEther('2'), ethers.parseEther('3')],
         { value: ethers.parseEther('7') }
       )
-    ).to.be.revertedWith('Unequal transfer amount')
+    ).to.be.revertedWithCustomError(multiSender, 'UnequalTransferAmount')
   })
 
   it('Should handle address(0) and refund correctly', async function () {
@@ -64,7 +64,7 @@ describe('MultiSender SendETH', function () {
         [ethers.parseEther('1'), ethers.parseEther('2'), ethers.parseEther('3')],
         { value: ethers.parseEther('6') }
       )
-    ).to.be.revertedWith('Cannot send to zero address')
+    ).to.be.revertedWithCustomError(multiSender, 'ZeroAddress')
   })
   it('Should revert if transfer failed', async function () {
     const RevertingFallback = await ethers.getContractFactory('RevertETH')
@@ -76,6 +76,6 @@ describe('MultiSender SendETH', function () {
         [ethers.parseEther('1'), ethers.parseEther('2'), ethers.parseEther('3')],
         { value: ethers.parseEther('6') }
       )
-    ).to.be.revertedWith(`Transfer failed`)
+    ).to.be.revertedWithCustomError(multiSender, 'TransferFailed')
   })
 })

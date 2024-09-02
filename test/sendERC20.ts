@@ -53,19 +53,15 @@ describe('MultiSender', function () {
       const initialBalance = await token.balanceOf(sender.address)
       await token.connect(sender).approve(multiSender.target, ethers.parseEther('60'))
 
-      await multiSender
-        .connect(sender)
-        .sendERC20(
-          token.target,
-          [recipient1.address, ethers.ZeroAddress, recipient3.address],
-          [ethers.parseEther('10'), ethers.parseEther('20'), ethers.parseEther('30')]
-        )
-
-      const finalBalance = await token.balanceOf(sender.address)
-      expect(finalBalance).to.equal(initialBalance - ethers.parseEther('40'))
-
-      expect(await token.balanceOf(recipient1.address)).to.equal(ethers.parseEther('10'))
-      expect(await token.balanceOf(recipient3.address)).to.equal(ethers.parseEther('30'))
+      await expect(
+        multiSender
+          .connect(sender)
+          .sendERC20(
+            token.target,
+            [recipient1.address, ethers.ZeroAddress, recipient3.address],
+            [ethers.parseEther('10'), ethers.parseEther('20'), ethers.parseEther('30')]
+          )
+      ).to.be.revertedWithCustomError(multiSender, 'ZeroAddress')
     })
 
     it('Should revert when recipients and amounts arrays have different lengths', async function () {
@@ -77,7 +73,7 @@ describe('MultiSender', function () {
             [recipient1.address, recipient2.address],
             [ethers.parseEther('10')]
           )
-      ).to.be.revertedWith('Must have the same length')
+      ).to.be.revertedWithCustomError(multiSender, 'InvalidLength')
     })
 
     it('Should revert when total transfer amount is zero', async function () {
@@ -85,7 +81,7 @@ describe('MultiSender', function () {
         multiSender
           .connect(sender)
           .sendERC20(token.target, [recipient1.address], [ethers.parseEther('0')])
-      ).to.be.revertedWith('Total transfer amount is zero')
+      ).to.be.revertedWithCustomError(multiSender, 'InsufficientBalance')
     })
 
     it('Should revert when sender has insufficient balance', async function () {
@@ -94,7 +90,7 @@ describe('MultiSender', function () {
         multiSender
           .connect(sender)
           .sendERC20(token.target, [recipient1.address], [ethers.parseEther('1000000')])
-      ).to.be.revertedWith('Not enough tokens')
+      ).to.be.revertedWithCustomError(multiSender, 'InsufficientBalance')
     })
 
     it('Should revert transfer which returns false', async function () {

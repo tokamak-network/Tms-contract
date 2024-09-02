@@ -10,6 +10,14 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 // Use SafeERC20 library for IERC20Upgradeable
 using SafeERC20Upgradeable for IERC20Upgradeable;
 
+// Define custom errors
+error InvalidLength();
+error InsufficientBalance();
+error TransferFailed();
+error ZeroAddress();
+error UnequalTransferAmount();
+error BalanceMismatch();
+
 // Define the contract
 contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
     // Initialize the contract
@@ -27,7 +35,9 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         uint256[] calldata _amounts
     ) external payable nonReentrant {
         // Check if the lengths of recipients and amounts arrays are equal
-        require(_recipients.length == _amounts.length, "Must have the same length");
+        if (_recipients.length != _amounts.length) {
+            revert InvalidLength();
+        }
 
         // Calculate the total amount to be sent
         uint256 _totalAmount = 0;
@@ -36,10 +46,14 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         }
 
         // Check if the total amount is greater than zero
-        require(_totalAmount > 0, "Total transfer amount is zero");
+        if (_totalAmount == 0) {
+            revert InsufficientBalance();
+        }
 
         // Check if the sender has enough ETH
-        require(msg.value == _totalAmount, "Unequal transfer amount");
+        if (msg.value != _totalAmount) {
+            revert UnequalTransferAmount();
+        }
 
         // Store the initial balance of the contract
         uint256 initialBalance = address(this).balance - msg.value;
@@ -51,22 +65,25 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
 
             // Check if the recipient is the zero address
             if (_recipients[i] == address(0)) {
-                revert("Cannot send to zero address");
+                revert ZeroAddress();
             }
 
             (bool success, ) = payable(_recipients[i]).call{value: _amounts[i]}("");
             if (!success) {
-                revert("Transfer failed");
+                revert TransferFailed();
             }
         }
 
         // Ensure that the final balance is as expected
         uint256 finalBalance = address(this).balance;
-        require(finalBalance == initialBalance, "Balance mismatch after transfers");
+        if (finalBalance != initialBalance) {
+            revert BalanceMismatch();
+        }
 
         // Emit the SendETH event
         emit SendETH(_recipients, _amounts);
     }
+
     // Function to send ERC20 tokens to multiple recipients
     function sendERC20(
         address _tokenAddress,
@@ -74,7 +91,9 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         uint256[] calldata _amounts
     ) external nonReentrant {
         // Check if the lengths of recipients and amounts arrays are equal
-        require(_recipients.length == _amounts.length, "Must have the same length");
+        if (_recipients.length != _amounts.length) {
+            revert InvalidLength();
+        }
 
         // Calculate the total amount to be sent
         uint256 _totalAmount;
@@ -83,21 +102,24 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         }
 
         // Check if the total amount is greater than zero
-        require(_totalAmount > 0, "Total transfer amount is zero");
+        if (_totalAmount == 0) {
+            revert InsufficientBalance();
+        }
 
         // Create an instance of the ERC20 token contract
         IERC20Upgradeable _token = IERC20Upgradeable(_tokenAddress);
 
         // Check if the sender has enough tokens
-        require(_token.balanceOf(msg.sender) >= _totalAmount, "Not enough tokens");
+        if (_token.balanceOf(msg.sender) < _totalAmount) {
+            revert InsufficientBalance();
+        }
         _token.safeTransferFrom(msg.sender, address(this), _totalAmount);
 
         // Send tokens to each recipient
         for (uint256 i = 0; i < _recipients.length; i++) {
             // Check if the recipient is the zero address
             if (_recipients[i] == address(0)) {
-                _token.safeTransfer(msg.sender, _amounts[i]);
-                continue;
+                revert ZeroAddress();
             }
 
             // Skip the transaction if the amount is zero
