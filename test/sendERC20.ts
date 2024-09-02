@@ -20,9 +20,6 @@ describe('MultiSender', function () {
     token = await Token.deploy(ethers.parseEther('1000'))
     await token.waitForDeployment()
 
-    // Deploy the upgradeable MultiSenderV2 contract
-    MultiSenderV2 = await ethers.getContractFactory('MultiSenderV2')
-
     // Transfer some tokens to the sender
     await token.transfer(sender.address, ethers.parseEther('100'))
   })
