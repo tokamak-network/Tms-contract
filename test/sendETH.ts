@@ -78,4 +78,5 @@ describe('MultiSender SendETH', function () {
       )
     ).to.be.revertedWithCustomError(multiSender, 'TransferFailed')
   })
+
 })

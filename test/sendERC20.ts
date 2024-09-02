@@ -12,7 +12,7 @@ describe('MultiSender', function () {
 
     // Deploy the upgradeable MultiSender contract
     MultiSender = await ethers.getContractFactory('MultiSender')
-    multiSender = await upgrades.deployProxy(MultiSender, [])
+    multiSender = await MultiSender.deploy()
     await multiSender.waitForDeployment()
 
     // Deploy the ERC20 token
@@ -154,41 +154,24 @@ describe('MultiSender', function () {
       expect(await token.balanceOf(recipient1.address)).to.equal(initialRecipient1Balance)
       expect(await token.balanceOf(recipient3.address)).to.equal(initialRecipient3Balance)
     })
-  })
 
-  describe('Contract upgrades', function () {
-    it('Should upgrade the contract and maintain state', async function () {
-      // Perform some operations on the original contract
-      await token.connect(sender).approve(multiSender.target, ethers.parseEther('10'))
-      await multiSender
-        .connect(sender)
-        .sendERC20(token.target, [multiSender.target], [ethers.parseEther('10')])
+    it('should rescue ERC20 tokens and emit event', async () => {
+      // Send some ERC20 tokens to the contract
+      await token.transfer(multiSender.target, ethers.parseEther('100.0'))
 
-      // Upgrade the contract
-      upgradedMultiSender = await upgrades.upgradeProxy(multiSender.target, MultiSenderV2)
-      await upgradedMultiSender.waitForDeployment()
+      // Call rescueERC20 as the owner
+      await expect(multiSender.connect(sender).rescueERC20(token.target, sender.address))
+        .to.emit(multiSender, 'RescueERC20')
+        .withArgs(token.target, sender.address, ethers.parseEther('100.0'))
 
-      // Check if the state is maintained
-      expect(await token.balanceOf(multiSender.target)).to.equal(ethers.parseEther('10'))
+      // Verify the contract balance is 0
+      expect(await token.balanceOf(multiSender.target)).to.equal(0)
+    })
 
-      // Perform operations on the upgraded contract
-      await token.connect(sender).approve(upgradedMultiSender.target, ethers.parseEther('60'))
-
-      const initialBalance = await token.balanceOf(sender.address)
-
-      await upgradedMultiSender
-        .connect(sender)
-        .sendERC20(
-          token.target,
-          [recipient1.address, recipient2.address, recipient3.address],
-          [ethers.parseEther('10'), ethers.parseEther('20'), ethers.parseEther('30')]
-        )
-
-      const finalBalance = await token.balanceOf(sender.address)
-      expect(finalBalance).to.equal(initialBalance - ethers.parseEther('60'))
-      expect(await token.balanceOf(recipient1.address)).to.equal(ethers.parseEther('10'))
-      expect(await token.balanceOf(recipient2.address)).to.equal(ethers.parseEther('20'))
-      expect(await token.balanceOf(recipient3.address)).to.equal(ethers.parseEther('30'))
+    it('should revert if called by non-owner', async () => {
+      await expect(
+        multiSender.connect(recipient1).rescueERC20(token.target, recipient1.address)
+      ).to.be.revertedWith('Ownable: caller is not the owner')
     })
   })
 })

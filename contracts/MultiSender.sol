@@ -2,13 +2,13 @@
 pragma solidity ^0.8.24;
 
 // Import required modules
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-// Use SafeERC20 library for IERC20Upgradeable
-using SafeERC20Upgradeable for IERC20Upgradeable;
+// Use SafeERC20 library for IERC20
+using SafeERC20 for IERC20;
 
 // Define custom errors
 error InvalidLength();
@@ -19,15 +19,11 @@ error UnequalTransferAmount();
 error BalanceMismatch();
 
 // Define the contract
-contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
-    // Initialize the contract
-    function initialize() public initializer {
-        __ReentrancyGuard_init();
-    }
-
+contract MultiSender is ReentrancyGuard, Ownable {
     // Event definitions
     event SendETH(address[] recipients, uint256[] amounts);
     event SendERC20(address token, address[] recipients, uint256[] amounts);
+    event RescueERC20(address token, address recipient, uint256 amount);
 
     // Function to send ETH to multiple recipients
     function sendETH(
@@ -107,7 +103,7 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
         }
 
         // Create an instance of the ERC20 token contract
-        IERC20Upgradeable _token = IERC20Upgradeable(_tokenAddress);
+        IERC20 _token = IERC20(_tokenAddress);
 
         // Check if the sender has enough tokens
         if (_token.balanceOf(msg.sender) < _totalAmount) {
@@ -132,5 +128,13 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable {
 
         // Emit the SendERC20 event
         emit SendERC20(_tokenAddress, _recipients, _amounts);
+    }
+ 
+    // Function to rescue stuck ERC20 tokens, only accessible by the owner
+    function rescueERC20(address _token, address _recipient) public onlyOwner {
+        IERC20 token = IERC20(_token);
+        uint256 balance = token.balanceOf(address(this));
+        token.safeTransfer(_recipient, balance);
+        emit RescueERC20(_token, _recipient, balance);
     }
 }
