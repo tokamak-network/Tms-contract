@@ -105,10 +105,7 @@ contract MultiSender is ReentrancyGuard, Ownable {
         // Create an instance of the ERC20 token contract
         IERC20 _token = IERC20(_tokenAddress);
 
-        // Check if the sender has enough tokens
-        if (_token.balanceOf(msg.sender) < _totalAmount) {
-            revert InsufficientBalance();
-        }
+      
         _token.safeTransferFrom(msg.sender, address(this), _totalAmount);
 
         // Send tokens to each recipient

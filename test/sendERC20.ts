@@ -90,7 +90,7 @@ describe('MultiSender', function () {
         multiSender
           .connect(sender)
           .sendERC20(token.target, [recipient1.address], [ethers.parseEther('1000000')])
-      ).to.be.revertedWithCustomError(multiSender, 'InsufficientBalance')
+      ).to.be.revertedWith('ERC20: transfer amount exceeds balance')
     })
 
     it('Should revert transfer which returns false', async function () {
