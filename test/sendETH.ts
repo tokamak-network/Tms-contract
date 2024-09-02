@@ -1,4 +1,4 @@
-import { ethers } from 'hardhat'
+import { ethers, upgrades } from 'hardhat'
 import { expect } from 'chai'
 import { MultiSender } from '../typechain-types'
 
@@ -9,8 +9,8 @@ describe('MultiSender SendETH', function () {
   beforeEach(async function () {
     // Deploy the contract
     const MultiSender = await ethers.getContractFactory('MultiSender')
-    multiSender = await MultiSender.deploy()
-    await multiSender.waitForDeployment()
+    multiSender = await upgrades.deployProxy(MultiSender, [])
+    
     ;[sender, recipient1, recipient2, recipient3] = await ethers.getSigners()
   })
 
@@ -78,5 +78,4 @@ describe('MultiSender SendETH', function () {
       )
     ).to.be.revertedWithCustomError(multiSender, 'TransferFailed')
   })
-
 })
