@@ -133,10 +133,13 @@ contract MultiSender is Initializable, ReentrancyGuardUpgradeable, OwnableUpgrad
     }
 
     // Function to rescue stuck ERC20 tokens, only accessible by the owner
-    function rescueERC20(address _token, address _recipient) public onlyOwner {
+    function rescueERC20(address _token, address _recipient, uint256 _amount) public onlyOwner {
         IERC20Upgradeable token = IERC20Upgradeable(_token);
         uint256 balance = token.balanceOf(address(this));
-        token.safeTransfer(_recipient, balance);
-        emit RescueERC20(_token, _recipient, balance);
+        if (balance < _amount) {
+            revert InsufficientBalance();
+        }
+        token.safeTransfer(_recipient, _amount);
+        emit RescueERC20(_token, _recipient, _amount);
     }
 }

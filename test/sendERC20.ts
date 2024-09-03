@@ -153,21 +153,31 @@ describe('MultiSender', function () {
     })
 
     it('should rescue ERC20 tokens and emit event', async () => {
+      const amount = ethers.parseEther('100.0')
       // Send some ERC20 tokens to the contract
-      await token.transfer(multiSender.target, ethers.parseEther('100.0'))
+      await token.transfer(multiSender.target, amount)
 
       // Call rescueERC20 as the owner
-      await expect(multiSender.connect(sender).rescueERC20(token.target, sender.address))
+      await expect(multiSender.connect(sender).rescueERC20(token.target, sender.address, amount))
         .to.emit(multiSender, 'RescueERC20')
-        .withArgs(token.target, sender.address, ethers.parseEther('100.0'))
+        .withArgs(token.target, sender.address, amount)
 
       // Verify the contract balance is 0
       expect(await token.balanceOf(multiSender.target)).to.equal(0)
     })
+    it('should revert when rescue extra tokens', async () => {
+      const amount = ethers.parseEther('100.0')
+      // Send some ERC20 tokens to the contract
+      await token.transfer(multiSender.target, amount)
+
+  
+      await expect(multiSender.connect(sender).rescueERC20(token.target, sender.address, ethers.parseEther('1000.0')))
+        .to.be.revertedWithCustomError(multiSender,"InsufficientBalance")
+    })
 
     it('should revert if called by non-owner', async () => {
       await expect(
-        multiSender.connect(recipient1).rescueERC20(token.target, recipient1.address)
+        multiSender.connect(recipient1).rescueERC20(token.target, recipient1.address,ethers.parseEther('100.0'))
       ).to.be.revertedWith('Ownable: caller is not the owner')
     })
   })
