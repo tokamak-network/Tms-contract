@@ -1,11 +1,12 @@
 {
   "main": "dist/typechain-types/index.js",
-  "author": "Bayram",
+  "author": "Shivansh",
   "scripts": {
     "clean": "npx hardhat clean",
     "compile": "npx hardhat compile",
     "test": "yarn compile && npx hardhat test",
-    "deploy": "npx hardhat deploy"
+    "deploy": "hardhat deploy --network titan ",
+    "verify": "hardhat --network titan etherscan-verify --solc-input --api-url https://explorer.titan.tokamak.network/api "
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
