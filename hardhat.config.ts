@@ -71,6 +71,13 @@ const config: HardhatUserConfig = {
       accounts: [process.env.DEPLOYER_PRIVATE_KEY],
       live: true,
       saveDeployments: true
+    } as NetworkUserConfig,
+    'titan': {
+      url: `https://rpc.titan.tokamak.network`,
+      chainId: 55004 ,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY],
+      live: true,
+      saveDeployments: true
     } as NetworkUserConfig
   },
   etherscan: {
@@ -80,8 +87,16 @@ const config: HardhatUserConfig = {
         network: 'sepolia-titan',
         chainId: 55007,
         urls: {
-          apiURL: 'https://explorer.titan-sepolia.tokamak.network/',
+          apiURL: ' https://explorer.titan-sepolia.tokamak.network/api',
           browserURL: 'https://explorer.titan-sepolia.tokamak.network/'
+        }
+      },
+      {
+        network: 'titan',
+        chainId: 55004,
+        urls: {
+          apiURL: ' https://explorer.titan.tokamak.network/api',
+          browserURL: 'https://explorer.titan.tokamak.network'
         }
       }
     ]
